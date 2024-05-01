@@ -2,10 +2,9 @@ package decode
 
 import "core:fmt"
 import "core:os"
-import "core:strings"
 
 BITS_PER_BYTE :: 8
-LINES         :: 2
+INSTRUCTION_SIZE :: 2 // Number of bytes per instruction
 
 OPCODE_MASK   :: 0b11111100 
 D_MASK        :: 0b00000010  
@@ -31,12 +30,10 @@ REG_HL :: enum{
     AH = 0b100,  
     CH = 0b101,  
     DH = 0b110,  
-    BH = 0b111,  
-    
+    BH = 0b111  
 }
 
 REG_X :: enum {
-    
     AX = 0b000,  
     CX = 0b001,  
     DX = 0b010,  
@@ -47,27 +44,26 @@ REG_X :: enum {
     DI = 0b111   
 }
 
-read_bytes :: proc(path: string) -> []u8 {
+read_instructions :: proc(path: string) -> []u8 {
     f, open_err := os.open(path, os.O_RDONLY, 0)
     defer os.close(f)
     if open_err != os.ERROR_NONE {
         fmt.println("Error opening file: ", open_err)
         return nil
     }
-    buffer := make([]u8, LINES) 
+    file_info, _ := os.fstat(f)
+    buffer := make([]u8, file_info.size)
     bytes, read_err := os.read(f, buffer)
     if read_err != os.ERROR_NONE {
         fmt.println("Error reading file: ", read_err)
         return nil
     }
-    return buffer[:bytes] 
+    return buffer[:bytes]
 }
 
-parse_instruction :: proc (path: string) -> (u8, u8, u8, u8, u8, u8){
-    data := read_bytes(path)
-
-    opcode_byte := data[0]
-    modrm_byte := data[1]
+parse_instruction :: proc (data: []u8, index: int) -> (u8, u8, u8, u8, u8, u8){
+    opcode_byte := data[index]
+    modrm_byte := data[index+1]
 
     opcode := (opcode_byte & OPCODE_MASK) >> OPCODE_OFFSET
     d := (opcode_byte & D_MASK) >> D_OFFSET
@@ -79,60 +75,49 @@ parse_instruction :: proc (path: string) -> (u8, u8, u8, u8, u8, u8){
     return opcode, d, w, mod, reg, rm
 }
 
-opcode :: proc(opcode_byte: u8) -> string {
+opcode_to_string :: proc(opcode_byte: u8) -> string {
     switch opcode_byte {
         case u8(OPCODE.MOV):
             return "mov"
-        case: 
-            return ""    
+        case: return "unknown"
     }
 }
 
-reg :: proc(reg_byte: u8, w: u8) -> string {
+reg_to_string :: proc(reg_byte: u8, w: u8) -> string {
     if w == 1 {
         switch reg_byte {
-            case u8(REG_X.AX):
-                return "ax"
-            case u8(REG_X.CX):
-                return "cx"
-            case u8(REG_X.DX):
-                return "dx"
-            case u8(REG_X.BX):
-                return "bx"
-            case u8(REG_X.SP):
-                return "sp"
-            case u8(REG_X.BP):
-                return "bp"
-            case u8(REG_X.SI):
-                return "si"
-            case u8(REG_X.DI):
-                return "di"
-            case:
-                return ""
+            case u8(REG_X.AX): return "ax"
+            case u8(REG_X.CX): return "cx"
+            case u8(REG_X.DX): return "dx"
+            case u8(REG_X.BX): return "bx"
+            case u8(REG_X.SP): return "sp"
+            case u8(REG_X.BP): return "bp"
+            case u8(REG_X.SI): return "si"
+            case u8(REG_X.DI): return "di"
+            case: return "unknown"
         }
     } else {
         switch reg_byte {
-            case u8(REG_HL.AL):
-                return "al"
-            case u8(REG_HL.CL):
-                return "cl"
-            case u8(REG_HL.DL):
-                return "dl"
-            case u8(REG_HL.BL):
-                return "bl"
-            case u8(REG_HL.AH):
-                return "ah"
-            case u8(REG_HL.CH):
-                return "ch"
-            case u8(REG_HL.DH):
-                return "dh"
-            case u8(REG_HL.BH):
-                return "bh"
-            case: 
-            return ""
+            case u8(REG_HL.AL): return "al"
+            case u8(REG_HL.CL): return "cl"
+            case u8(REG_HL.DL): return "dl"
+            case u8(REG_HL.BL): return "bl"
+            case u8(REG_HL.AH): return "ah"
+            case u8(REG_HL.CH): return "ch"
+            case u8(REG_HL.DH): return "dh"
+            case u8(REG_HL.BH): return "bh"
+            case: return "unknown"
         }
     }
 }
 
-
-
+display_instructions :: proc(data: []u8) {
+    fmt.printfln("bits 16\n")
+    for i := 0; i < len(data)-1; i += 2 {
+        opcode, d, w, mod, reg, rm := parse_instruction(data, i)
+        opcode_str := opcode_to_string(opcode)
+        source := reg_to_string(reg, w)
+        dest := reg_to_string(rm, w)
+        fmt.printfln("%s %s, %s", opcode_str, dest, source)  
+    }
+}
