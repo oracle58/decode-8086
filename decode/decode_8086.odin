@@ -23,9 +23,28 @@ OPCODE :: enum {
     MOV = 0b100010
 }
 
-REG :: enum {
-    BX = 0b011,
-    CX = 0b001
+REG_HL :: enum{
+    AL = 0b000,  
+    CL = 0b001,  
+    DL = 0b010,  
+    BL = 0b011,  
+    AH = 0b100,  
+    CH = 0b101,  
+    DH = 0b110,  
+    BH = 0b111,  
+    
+}
+
+REG_X :: enum {
+    
+    AX = 0b000,  
+    CX = 0b001,  
+    DX = 0b010,  
+    BX = 0b011,  
+    SP = 0b100,  
+    BP = 0b101,  
+    SI = 0b110,  
+    DI = 0b111   
 }
 
 read_bytes :: proc(path: string) -> []u8 {
@@ -69,14 +88,49 @@ opcode :: proc(opcode_byte: u8) -> string {
     }
 }
 
-reg :: proc(reg_byte: u8) -> string {
-    switch reg_byte {
-        case u8(REG.BX):
-            return "bx"
-        case u8(REG.CX):
-            return "cx"
-        case: 
-            return ""    
+reg :: proc(reg_byte: u8, w: u8) -> string {
+    if w == 1 {
+        switch reg_byte {
+            case u8(REG_X.AX):
+                return "ax"
+            case u8(REG_X.CX):
+                return "cx"
+            case u8(REG_X.DX):
+                return "dx"
+            case u8(REG_X.BX):
+                return "bx"
+            case u8(REG_X.SP):
+                return "sp"
+            case u8(REG_X.BP):
+                return "bp"
+            case u8(REG_X.SI):
+                return "si"
+            case u8(REG_X.DI):
+                return "di"
+            case:
+                return ""
+        }
+    } else {
+        switch reg_byte {
+            case u8(REG_HL.AL):
+                return "al"
+            case u8(REG_HL.CL):
+                return "cl"
+            case u8(REG_HL.DL):
+                return "dl"
+            case u8(REG_HL.BL):
+                return "bl"
+            case u8(REG_HL.AH):
+                return "ah"
+            case u8(REG_HL.CH):
+                return "ch"
+            case u8(REG_HL.DH):
+                return "dh"
+            case u8(REG_HL.BH):
+                return "bh"
+            case: 
+            return ""
+        }
     }
 }
 

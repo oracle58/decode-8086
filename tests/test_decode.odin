@@ -33,8 +33,8 @@ decoding :: proc(t: ^testing.T) {
     
     opcode, d, w, mod, reg, rm := decode.parse_instruction(path)
     opcode_str := decode.opcode(opcode)
-    reg_str := decode.reg(reg)
-    rm_str := decode.reg(rm)
+    reg_str := decode.reg(reg, w)
+    rm_str := decode.reg(rm, w)
 
     testing.expect(t, expected_opcode_str == opcode_str)
     testing.expect(t, expected_reg_str == reg_str)
@@ -46,8 +46,8 @@ disassemble :: proc(t: ^testing.T) {
     expected_asm := "bits 16\n\nmov cx, bx"
     opcode, d, w, mod, reg, rm := decode.parse_instruction(path)
     opcode_str := decode.opcode(opcode)
-    source := decode.reg(reg)
-    dest := decode.reg(rm)
+    source := decode.reg(reg, w)
+    dest := decode.reg(rm, w)
     str := fmt.aprintf("bits %d\n\n%s %s, %s", 16, opcode_str, dest, source)
     testing.expect(t, expected_asm == str)
 }
