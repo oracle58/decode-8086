@@ -3,5 +3,5 @@ import "core:fmt"
 import "decode"
 
 main :: proc() {
-    decode.run()
+    fmt.printf("See the test cases for each exercise")
 }

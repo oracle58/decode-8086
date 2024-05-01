@@ -19,22 +19,13 @@ D_OFFSET      :: 1
 MOD_OFFSET    :: 6
 REG_OFFSET    :: 3
 
+OPCODE :: enum {
+    MOV = 0b100010
+}
 
-run :: proc() {
-    path := "decode/listing_0037_single_register_mov"
-    data := read_bytes(path)
-
-    opcode_byte := data[0]
-    modrm_byte := data[1]
-    
-    opcode := (opcode_byte & OPCODE_MASK) >> OPCODE_OFFSET
-    d := (opcode_byte & D_MASK) >> D_OFFSET
-    w := (opcode_byte & W_MASK) 
-    mod := (modrm_byte & MOD_MASK) >> MOD_OFFSET
-    reg := (modrm_byte & REG_MASK) >> REG_OFFSET
-    rm := (modrm_byte & RM_MASK)
-
-    print(opcode_byte, modrm_byte, opcode, d, w, mod, reg, rm)
+REG :: enum {
+    BX = 0b011,
+    CX = 0b001
 }
 
 read_bytes :: proc(path: string) -> []u8 {
@@ -52,6 +43,44 @@ read_bytes :: proc(path: string) -> []u8 {
     }
     return buffer[:bytes] 
 }
+
+parse_instruction :: proc (path: string) -> (u8, u8, u8, u8, u8, u8){
+
+    data := read_bytes(path)
+
+    opcode_byte := data[0]
+    modrm_byte := data[1]
+
+    opcode := (opcode_byte & OPCODE_MASK) >> OPCODE_OFFSET
+    d := (opcode_byte & D_MASK) >> D_OFFSET
+    w := (opcode_byte & W_MASK) 
+    mod := (modrm_byte & MOD_MASK) >> MOD_OFFSET
+    reg := (modrm_byte & REG_MASK) >> REG_OFFSET
+    rm := (modrm_byte & RM_MASK)
+    return opcode, d, w, mod, reg, rm
+    
+}
+
+opcode :: proc(opcode_byte: u8) -> string {
+    switch opcode_byte {
+        case u8(OPCODE.MOV):
+            return "mov"
+        case: 
+            return ""    
+    }
+}
+
+reg :: proc(reg_byte: u8) -> string {
+    switch reg_byte {
+        case u8(REG.BX):
+            return "bx"
+        case u8(REG.CX):
+            return "cx"
+        case: 
+            return ""    
+    }
+}
+
 
 print :: proc(opcode_byte: u8, modrm_byte: u8, opcode: u8, d: u8, w: u8, mod: u8, reg: u8, rm: u8) {
     fmt.printfln("INSTRUCTION: %b%b", opcode_byte, modrm_byte)
