@@ -45,7 +45,6 @@ read_bytes :: proc(path: string) -> []u8 {
 }
 
 parse_instruction :: proc (path: string) -> (u8, u8, u8, u8, u8, u8){
-
     data := read_bytes(path)
 
     opcode_byte := data[0]
@@ -57,8 +56,8 @@ parse_instruction :: proc (path: string) -> (u8, u8, u8, u8, u8, u8){
     mod := (modrm_byte & MOD_MASK) >> MOD_OFFSET
     reg := (modrm_byte & REG_MASK) >> REG_OFFSET
     rm := (modrm_byte & RM_MASK)
+
     return opcode, d, w, mod, reg, rm
-    
 }
 
 opcode :: proc(opcode_byte: u8) -> string {
@@ -81,15 +80,5 @@ reg :: proc(reg_byte: u8) -> string {
     }
 }
 
-
-print :: proc(opcode_byte: u8, modrm_byte: u8, opcode: u8, d: u8, w: u8, mod: u8, reg: u8, rm: u8) {
-    fmt.printfln("INSTRUCTION: %b%b", opcode_byte, modrm_byte)
-    fmt.printfln("OPCODE     : %b", opcode)
-    fmt.printfln("D          : %b", d)
-    fmt.printfln("W          : %b", w)
-    fmt.printfln("MOD        : %b", mod)
-    fmt.printfln("REG        : %03b", reg)
-    fmt.printfln("R/M        : %03b", rm)
-}
 
 
