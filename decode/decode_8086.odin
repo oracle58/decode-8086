@@ -2,6 +2,7 @@ package decode
 
 import "core:fmt"
 import "core:os"
+import "core:strings"
 
 BITS_PER_BYTE :: 8
 INSTRUCTION_SIZE :: 2 // Number of bytes per instruction
@@ -111,13 +112,20 @@ reg_to_string :: proc(reg_byte: u8, w: u8) -> string {
     }
 }
 
-display_instructions :: proc(data: []u8) {
-    fmt.printfln("bits 16\n")
-    for i := 0; i < len(data)-1; i += 2 {
+format_instructions :: proc(data: []u8) -> string {
+    result := strings.Builder{}
+    defer strings.builder_destroy(&result)
+
+    str := "bits 16\n\n"
+
+    for i := 0; i < len(data) - 1; i += 2 {
         opcode, d, w, mod, reg, rm := parse_instruction(data, i)
         opcode_str := opcode_to_string(opcode)
         source := reg_to_string(reg, w)
         dest := reg_to_string(rm, w)
-        fmt.printfln("%s %s, %s", opcode_str, dest, source)  
+        line := fmt.aprintf("%s %s, %s\n", opcode_str, dest, source)
+        str = strings.concatenate({str, line})
     }
+
+    return str
 }

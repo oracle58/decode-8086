@@ -8,7 +8,6 @@ main :: proc() {
     many_path := "./decode/listing_0038_many_register_mov"
 
     data := decode.read_instructions(many_path)
-    if data != nil {
-        decode.display_instructions(data)
-    }
+    instructions := decode.format_instructions(data)
+    fmt.printfln(instructions)
 }
