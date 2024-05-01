@@ -22,3 +22,8 @@ mod = 11 -> reg to reg
 - `w` (wide): w=0 -> 8 bits, w=1 -> 16 bits
 - `reg`: encoded register, e.g. `BX`
 - `r/m`: encoded register or memory address. `r` is selected if mod=11 
+
+## Assembly on Win
+
+1. `nasm -f win64 listing_0037_single_register_mov.asm -o sr_mov.o`
+2. `ld -e sr_mov.o /fo srmov.exe`
