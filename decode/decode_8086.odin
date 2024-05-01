@@ -20,7 +20,7 @@ OPCODE :: enum {
     MOV = 0b100010
 }
 
-REG_HL :: enum{
+REG_LH :: enum{
     AL = 0b000,  
     CL = 0b001,  
     DL = 0b010,  
@@ -98,14 +98,14 @@ reg_to_string :: proc(reg_byte: u8, w: u8) -> string {
         }
     } else {
         switch reg_byte {
-            case u8(REG_HL.AL): return "al"
-            case u8(REG_HL.CL): return "cl"
-            case u8(REG_HL.DL): return "dl"
-            case u8(REG_HL.BL): return "bl"
-            case u8(REG_HL.AH): return "ah"
-            case u8(REG_HL.CH): return "ch"
-            case u8(REG_HL.DH): return "dh"
-            case u8(REG_HL.BH): return "bh"
+            case u8(REG_LH.AL): return "al"
+            case u8(REG_LH.CL): return "cl"
+            case u8(REG_LH.DL): return "dl"
+            case u8(REG_LH.BL): return "bl"
+            case u8(REG_LH.AH): return "ah"
+            case u8(REG_LH.CH): return "ch"
+            case u8(REG_LH.DH): return "dh"
+            case u8(REG_LH.BH): return "bh"
             case: return "unknown"
         }
     }
