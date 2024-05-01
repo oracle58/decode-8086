@@ -40,3 +40,14 @@ decoding :: proc(t: ^testing.T) {
     testing.expect(t, expected_reg_str == reg_str)
     testing.expect(t, expected_rm_str == rm_str)
 }
+
+@(test)
+disassemble :: proc(t: ^testing.T) {
+    expected_asm := "bits 16\n\nmov cx, bx"
+    opcode, d, w, mod, reg, rm := decode.parse_instruction(path)
+    opcode_str := decode.opcode(opcode)
+    source := decode.reg(reg)
+    dest := decode.reg(rm)
+    str := fmt.aprintf("bits %d\n\n%s %s, %s", 16, opcode_str, dest, source)
+    testing.expect(t, expected_asm == str)
+}
