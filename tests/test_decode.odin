@@ -1,53 +1,60 @@
-// package tests
+package tests
 
-// import "core:testing"
-// import "../decode"
-// import "core:fmt"
+import "core:testing"
+import "../decode"
+import "core:fmt"
 
-// path := "./decode/listing_0037_single_register_mov"
+@(test)
+parse_instructions_from_binary :: proc (t: ^testing.T) {
+    path := "./decode/listing_0037_single_register_mov"
+    data := decode.read_instructions(path)
 
-// @(test)
-// parse_instructions_from_binary :: proc (t: ^testing.T) {
-//     expected_opcode:u8 = 0b100010
-//     expected_d:u8 = 0b0
-//     expected_w:u8 = 0b1
-//     expected_mod:u8 = 0b11
-//     expected_reg:u8 = 0b011
-//     expected_rm:u8 = 0b001
+    expected_opcode:u8 = 0b100010
+    expected_d:u8 = 0b0
+    expected_w:u8 = 0b1
+    expected_mod:u8 = 0b11
+    expected_reg:u8 = 0b011
+    expected_rm:u8 = 0b001
 
-//     opcode, d, w, mod, reg, rm := decode.parse_instruction(path)
+    opcode, d, w, mod, reg, rm := decode.parse_instruction(data, 0)
 
-//     testing.expect(t, expected_opcode == opcode)
-//     testing.expect(t, expected_d == d)
-//     testing.expect(t, expected_w == w)
-//     testing.expect(t, expected_mod == mod)
-//     testing.expect(t, expected_reg == reg)
-//     testing.expect(t, expected_rm == rm)
-// }
+    testing.expect_value(t, opcode, expected_opcode)
+    testing.expect_value(t, d, expected_d)
+    testing.expect_value(t, w, expected_w)
+    testing.expect_value(t, mod, expected_mod)
+    testing.expect_value(t, reg, expected_reg)
+    testing.expect_value(t, rm, expected_rm)
+}
 
-// @(test)
-// decoding :: proc(t: ^testing.T) {
-//     expected_opcode_str := "mov"
-//     expected_reg_str := "bx"
-//     expected_rm_str := "cx"
+@(test)
+decoding :: proc(t: ^testing.T) {
+    path := "./decode/listing_0037_single_register_mov"
+    data := decode.read_instructions(path)
+
+    expected_opcode_str := "mov"
+    expected_reg_str := "bx"
+    expected_rm_str := "cx"
     
-//     opcode, d, w, mod, reg, rm := decode.parse_instruction(path)
-//     opcode_str := decode.opcode(opcode)
-//     reg_str := decode.reg(reg, w)
-//     rm_str := decode.reg(rm, w)
+    opcode, d, w, mod, reg, rm := decode.parse_instruction(data, 0)
+    opcode_str := decode.opcode_to_string(opcode)
+    reg_str := decode.reg_to_string(reg, w)
+    rm_str := decode.reg_to_string(rm, w)
 
-//     testing.expect(t, expected_opcode_str == opcode_str)
-//     testing.expect(t, expected_reg_str == reg_str)
-//     testing.expect(t, expected_rm_str == rm_str)
-// }
+    testing.expect_value(t, opcode_str, expected_opcode_str)
+    testing.expect_value(t, reg_str, expected_reg_str)
+    testing.expect_value(t, rm_str, expected_rm_str)
+}
 
-// @(test)
-// disassemble :: proc(t: ^testing.T) {
-//     expected_asm := "bits 16\n\nmov cx, bx"
-//     opcode, d, w, mod, reg, rm := decode.parse_instruction(path)
-//     opcode_str := decode.opcode(opcode)
-//     source := decode.reg(reg, w)
-//     dest := decode.reg(rm, w)
-//     str := fmt.aprintf("bits %d\n\n%s %s, %s", 16, opcode_str, dest, source)
-//     testing.expect(t, expected_asm == str)
-// }
+@(test)
+disassemble :: proc(t: ^testing.T) {
+    path := "./decode/listing_0037_single_register_mov"
+    data := decode.read_instructions(path)
+
+    expected_asm := "bits 16\n\nmov cx, bx"
+    opcode, d, w, mod, reg, rm := decode.parse_instruction(data, 0)
+    opcode_str := decode.opcode_to_string(opcode)
+    source := decode.reg_to_string(reg, w)
+    dest := decode.reg_to_string(rm, w)
+    str := fmt.aprintf("bits %d\n\n%s %s, %s", 16, opcode_str, dest, source)
+    testing.expect_value(t, str, expected_asm)
+}
