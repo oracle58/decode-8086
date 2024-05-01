@@ -5,11 +5,11 @@
 INDEX    | 7 6 5 4 3 2  |  1 0  | 7 6   |  543   |  210  |
 -------- |--------------|-------|-------|--------|-------|
 INSTR    |   opcode     |  d w  | mod   |  reg   |  r/m  |
-EXMPL    | 1 0 0 0 1 0  |  1 0  | 1 1   |  001   |  011  |
-ASM      |     `MOV`    |   *   |  **   |  `CX`  |  `BX` |
+EXMPL    | 1 0 0 0 1 0  |  0 0  | 1 1   |  011   |  001  |
+ASM      |     `MOV`    |   *   |  **   |  `BX`  |  `CX` |
 
 **\*** Depending on the order of operands in `mov`, `d` will be set to 0 or 1 indicating the direction of the data to be copied, e.g from CX to BX or vice versa. It sets whether `reg` or `r/m` is to be considered the destination.
-e.g. `mov cx, bx`:  `cx` = dest -> d=1.
+e.g. `mov cx, bx`:  `cx` = dest -> d=0 because CX sits in the r/m field.
 
 **\*\*** Alternator for `r/m`. depending on mod the last 3 bits can hold an encoded reference to a register or memory addr
 
