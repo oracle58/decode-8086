@@ -4,9 +4,6 @@ import "core:fmt"
 import "core:os"
 import "core:strings"
 
-BITS_PER_BYTE :: 8
-INSTRUCTION_SIZE :: 2 // Number of bytes per instruction
-
 OPCODE_MASK   :: 0b11111100 
 D_MASK        :: 0b00000010  
 W_MASK        :: 0b00000001  
@@ -80,7 +77,8 @@ opcode_to_string :: proc(opcode_byte: u8) -> string {
     switch opcode_byte {
         case u8(OPCODE.MOV):
             return "mov"
-        case: return "unknown"
+        case: 
+            panic("unrecognized opcode")
     }
 }
 
@@ -95,7 +93,8 @@ reg_to_string :: proc(reg_byte: u8, w: u8) -> string {
             case u8(REG_X.BP): return "bp"
             case u8(REG_X.SI): return "si"
             case u8(REG_X.DI): return "di"
-            case: return "unknown"
+            case: 
+                panic("unrecognized registry encoding")
         }
     } else {
         switch reg_byte {
@@ -126,6 +125,5 @@ format_instructions :: proc(data: []u8) -> string {
         line := fmt.aprintf("%s %s, %s\n", opcode_str, dest, source)
         str = strings.concatenate({str, line})
     }
-
     return str
 }
