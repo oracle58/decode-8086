@@ -24,17 +24,17 @@ run :: proc() {
     path := "decode/listing_0037_single_register_mov"
     data := read_bytes(path)
 
-    low_bits := data[0]
-    high_bits := data[1]
+    opcode_byte := data[0]
+    modrm_byte := data[1]
     
-    opcode := (low_bits & OPCODE_MASK) >> OPCODE_OFFSET
-    d := (low_bits & D_MASK) >> D_OFFSET
-    w := (low_bits & W_MASK) 
-    mod := (high_bits & MOD_MASK) >> MOD_OFFSET
-    reg := (high_bits & REG_MASK) >> REG_OFFSET
-    rm := (high_bits & RM_MASK)
+    opcode := (opcode_byte & OPCODE_MASK) >> OPCODE_OFFSET
+    d := (opcode_byte & D_MASK) >> D_OFFSET
+    w := (opcode_byte & W_MASK) 
+    mod := (modrm_byte & MOD_MASK) >> MOD_OFFSET
+    reg := (modrm_byte & REG_MASK) >> REG_OFFSET
+    rm := (modrm_byte & RM_MASK)
 
-    print(low_bits, high_bits, opcode, d, w, mod, reg, rm)
+    print(opcode_byte, modrm_byte, opcode, d, w, mod, reg, rm)
 }
 
 read_bytes :: proc(path: string) -> []u8 {
@@ -53,8 +53,8 @@ read_bytes :: proc(path: string) -> []u8 {
     return buffer[:bytes] 
 }
 
-print :: proc(low_bits: u8, high_bits: u8, opcode: u8, d: u8, w: u8, mod: u8, reg: u8, rm: u8) {
-    fmt.printfln("INSTRUCTION: %b%b", low_bits, high_bits)
+print :: proc(opcode_byte: u8, modrm_byte: u8, opcode: u8, d: u8, w: u8, mod: u8, reg: u8, rm: u8) {
+    fmt.printfln("INSTRUCTION: %b%b", opcode_byte, modrm_byte)
     fmt.printfln("OPCODE     : %b", opcode)
     fmt.printfln("D          : %b", d)
     fmt.printfln("W          : %b", w)
