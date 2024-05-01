@@ -1,7 +1,4 @@
 package main
-//           7 6 5 4 3 2 10 | 7 6 5 4 3 2 1 0 |
-//  REGISTER 1 0 0 0 1 0 dw | mod    reg  r/m
-
 import "core:fmt"
 
 main :: proc() {
