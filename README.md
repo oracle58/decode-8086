@@ -1,6 +1,4 @@
-# computer-enhance
-
-# Exericise I: Decoding the 8086
+# Decoding the 8086
 
 INDEX    | 7 6 5 4 3 2  |  1 0  | 7 6   |  543   |  210  |
 -------- |--------------|-------|-------|--------|-------|
@@ -29,6 +27,7 @@ e.g. `mov cx, bx`:  `cx` = dest -> d=0 because CX sits in the r/m field.
 ## Creating binaries
 1. `nasm listing_0037_single_register_mov.asm`
 2. `nasm listing_0038_many_register_mov.asm`
+
 ## Assembly on Win
 1. `nasm -f win64 listing_0037_single_register_mov.asm -o sr_mov.o`
 2. `ld -e sr_mov.o /fo srmov.exe`
