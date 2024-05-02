@@ -106,7 +106,8 @@ reg_to_string :: proc(reg_byte: u8, w: u8) -> string {
             case u8(REG_LH.CH): return "ch"
             case u8(REG_LH.DH): return "dh"
             case u8(REG_LH.BH): return "bh"
-            case: return "unknown"
+            case: 
+                panic("unrecognized registry encoding")
         }
     }
 }

@@ -13,11 +13,12 @@ e.g. `mov cx, bx`:  `cx` = dest -> d=0 because CX sits in the r/m field.
 
 **\*\*** Alternator for `r/m`. depending on mod the last 3 bits can hold an encoded reference to a register or memory addr
 
-- `opcode`: e.g. mov=100010
+- `opcode`: e.g. 100010 or 1011 w reg  
 - `mod`(displacement): alternates between `r` (register) and `m`(memory) and enables use of `disp_low` and `disp_high`. 
+    - 00 -> [...]
     - 11 -> r/m = reg
-    - 01 -> disp_low
-    - 10 -> disp_high
+    - 01 -> disp_low [...+8]
+    - 10 -> disp_high [...+16]
 - `d` (destination): 
     - d=0 -> `reg`=source and `r/m`=dest
     - d=1 -> `reg`=dest and `r/m`=source (this is required when we want to load data from memory into register as we can only load mem data from r/m field we need to swap dest and source)

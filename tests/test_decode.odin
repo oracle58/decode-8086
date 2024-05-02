@@ -6,7 +6,7 @@ import "core:fmt"
 
 @(test)
 parse_instructions_from_binary :: proc (t: ^testing.T) {
-    path := "./decode/listing_0037_single_register_mov"
+    path := "./samples/listing_0037_single_register_mov"
     data := decode.read_instructions(path)
 
     expected_opcode:u8 = 0b100010
@@ -28,7 +28,7 @@ parse_instructions_from_binary :: proc (t: ^testing.T) {
 
 @(test)
 decoding :: proc(t: ^testing.T) {
-    path := "./decode/listing_0037_single_register_mov"
+    path := "./samples/listing_0037_single_register_mov"
     data := decode.read_instructions(path)
 
     expected_opcode_str := "mov"
@@ -47,7 +47,7 @@ decoding :: proc(t: ^testing.T) {
 
 @(test)
 disassemble_single :: proc(t: ^testing.T) {
-    path := "./decode/listing_0037_single_register_mov"
+    path := "./samples/listing_0037_single_register_mov"
     data := decode.read_instructions(path)
 
     expected_asm := "bits 16\n\nmov cx, bx\n"
@@ -57,7 +57,7 @@ disassemble_single :: proc(t: ^testing.T) {
 
 @(test)
 disassemble_many :: proc(t: ^testing.T) {
-    many_path := "./decode/listing_0038_many_register_mov"
+    many_path := "./samples/listing_0038_many_register_mov"
     data := decode.read_instructions(many_path)
 
     expected_asm := "bits 16\n\n" +
