@@ -19,6 +19,30 @@ RM_OFFSET     :: 0
 
 AX :: 0b110 //NOTE: Accumulator is a special case as it has 16-bit displacement when used with mod=00
 
+
+REG_8 :: enum {
+    AL = 0b000,
+    CL = 0b001,
+    DL = 0b010,
+    BL = 0b011,
+    AH = 0b100,
+    CH = 0b101,
+    DH = 0b110,
+    BH = 0b111
+}
+
+REG_16 :: enum {
+    AX = 0b000,
+    CX = 0b001,
+    DX = 0b010,
+    BX = 0b011,
+    SP = 0b100,
+    BP = 0b101,
+    SI = 0b110,
+    DI = 0b111,
+}
+
+
 MOD :: enum {
     DISP_NO = 0b00,
     DISP_LO = 0b01,
