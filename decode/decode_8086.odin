@@ -61,7 +61,7 @@ read_instructions :: proc(path: string) -> []u8 {
     return buffer[:bytes]
 }
 
-iterator_limit: int = 14
+iterator_limit: int = 20
 
 parse_instructions :: proc(data: []u8) -> string {
     decoded_str := "Bits 16\n\n"
