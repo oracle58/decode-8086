@@ -100,9 +100,7 @@ parse_instructions :: proc(data: []u8) -> string {
 
             w = (opcode_byte & 0b00001000) != 0
             reg = (opcode_byte & 0b00000111) 
-            fmt.printfln("BYTESLICE: %b", opcode_byte)
-            fmt.printfln("REG: %b", reg)
-            src = fmt.aprintf("%d", modrm_byte)
+            src = fmt.aprintf("%d", parse_sign(modrm_byte))
             dest = reg_to_string(reg, w)
         }
 
@@ -114,4 +112,14 @@ parse_instructions :: proc(data: []u8) -> string {
         decoded_str = strings.concatenate({decoded_str, formatted_instruction})
     }
     return decoded_str
+}
+
+parse_sign :: proc(value: u8) -> int {
+    if value & 0x80 != 0 {  // Check if the MSB (bit 7) is set
+        // If the MSB is set, interpret the value as a negative number in two's complement
+        return int(i8(value))  // Cast u8 to i8 to get two's complement, then to int for broader use
+    } else {
+        // If the MSB is not set, it's a positive number and can be cast directly to int
+        return int(value)
+    }
 }
