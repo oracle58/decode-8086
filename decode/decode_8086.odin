@@ -34,7 +34,7 @@ MOD :: enum {
     REG = 0b11
 }
 
-reg_to_string :: proc(reg_code: u8, w: bool) -> string {
+parse_reg :: proc(reg_code: u8, w: bool) -> string {
     reg_names: [16]string = {"al", "cl", "dl", "bl", "ah", "ch", "dh", "bh",
                              "ax", "cx", "dx", "bx", "sp", "bp", "si", "di"}
     if w { 
@@ -61,65 +61,86 @@ read_instructions :: proc(path: string) -> []u8 {
     return buffer[:bytes]
 }
 
+iterator_limit: int = 14
+
 parse_instructions :: proc(data: []u8) -> string {
     decoded_str := "Bits 16\n\n"
     data_len := len(data)
     fmt.printfln("%b", data)
 
     //TODO: need to iterate by instruction size
-    for i:=0; i < 8; i+=2 {
+    for i:=0; i < iterator_limit; {
         opcode_byte := data[i]
-        modrm_byte := data[i + 1]
-          
-        displacement_size := 0
+        
         mnemonic := "mov"
         formatted_instruction: string
         dest: string
         src: string
-        mod := (modrm_byte & MOD_MASK) >> MOD_OFFSET
+        
         w: bool
         d: bool
         reg: u8 
         rm: u8 
-        data: u8
+        size:int = 2
 
+        
         if (opcode_byte >> 2 == u8(OPCODES.REG_RM)) {  
+            
+            data_byte := data[i + 1]  
+
             w = (opcode_byte & 0b00000001) != 0
             d = (opcode_byte & 0b00000010) != 0
-            reg = (modrm_byte & REG_MASK) >> REG_OFFSET
-            rm = (modrm_byte & RM_MASK)
+
+            reg = (data_byte & REG_MASK) >> REG_OFFSET
+            rm = (data_byte & RM_MASK)
+            mod := (data_byte & MOD_MASK) >> MOD_OFFSET
             if (d) {
-                dest  = reg_to_string(reg, w)
-                src = reg_to_string(rm, w)
+                dest  = parse_reg(reg, w)
+                src = parse_reg(rm, w)
             } else {
-                dest = reg_to_string(rm, w)
-                src  = reg_to_string(reg, w)
+                dest = parse_reg(rm, w)
+                src  = parse_reg(reg, w)
             }
         }
         else if (opcode_byte >> 4 == u8(OPCODES.IMMEDIATE_REG)) { 
 
             w = (opcode_byte & 0b00001000) != 0
             reg = (opcode_byte & 0b00000111) 
-            src = fmt.aprintf("%d", parse_sign(modrm_byte))
-            dest = reg_to_string(reg, w)
+            dest = parse_reg(reg, w)
+            if w {
+                size = 3
+                low_byte := data[i + 1]   // data
+                high_byte := data[i + 2]  // disp_lo
+                value := concat_bits(low_byte, high_byte)
+                src = fmt.aprintf("%d", parse_sign_u16(value)) 
+            } else {
+                data_byte := data[i + 1]  
+                src = fmt.aprintf("%d", parse_sign_u8(data_byte)) 
+            } 
         }
-
-        // switch mod {
-        //     case u8(MOD.REG):
-                
-        //     }
         formatted_instruction = fmt.aprintf("%s %s, %s \n", mnemonic, dest, src)
         decoded_str = strings.concatenate({decoded_str, formatted_instruction})
+        i+=size
     }
     return decoded_str
 }
 
-parse_sign :: proc(value: u8) -> int {
+parse_sign_u8 :: proc(value: u8) -> int {
     if value & 0x80 != 0 {  // Check if the MSB (bit 7) is set
-        // If the MSB is set, interpret the value as a negative number in two's complement
-        return int(i8(value))  // Cast u8 to i8 to get two's complement, then to int for broader use
+        return int(i8(value))  
     } else {
-        // If the MSB is not set, it's a positive number and can be cast directly to int
         return int(value)
     }
+}
+
+parse_sign_u16 :: proc(value: u16) -> int {
+    if value & 0x8000 != 0 {  // Check if the MSB (bit 7) is set
+        return int(i16(value))  
+    } else {
+        return int(value)
+    }
+}
+
+concat_bits :: proc(low_byte: u8, high_byte: u8, ) -> u16 {
+    return u16(low_byte) | u16(high_byte) << 8
 }
