@@ -61,9 +61,10 @@ read_instructions :: proc(path: string) -> []u8 {
     return buffer[:bytes]
 }
 
-iterator_limit: int = 20
+iterator_limit: int = 26
 
 parse_instructions :: proc(data: []u8) -> string {
+    mod_00: [8]string= {"[bx + si]", "[bx + di]", "[bp + si]", "[bp + di]", "si", "di", "", "bx"}
     decoded_str := "Bits 16\n\n"
     data_len := len(data)
     fmt.printfln("%b", data)
@@ -95,10 +96,18 @@ parse_instructions :: proc(data: []u8) -> string {
             mod := (data_byte & MOD_MASK) >> MOD_OFFSET
             if (d) {
                 dest  = parse_reg(reg, w)
-                src = parse_reg(rm, w)
+                if (mod == 0b11) {
+                    src = parse_reg(rm, w)
+                } else if (mod == 0b00)
+                {
+                    reg_code := data_byte & 0b00000111
+                    src =fmt.aprintf("%s", mod_00[reg_code])
+                }
             } else {
                 dest = parse_reg(rm, w)
-                src  = parse_reg(reg, w)
+                if (mod == 0b11) {
+                    src = parse_reg(reg, w)
+                }
             }
         }
         else if (opcode_byte >> 4 == u8(OPCODES.IMMEDIATE_REG)) { 
@@ -108,8 +117,8 @@ parse_instructions :: proc(data: []u8) -> string {
             dest = parse_reg(reg, w)
             if w {
                 size = 3
-                low_byte := data[i + 1]   // data
-                high_byte := data[i + 2]  // disp_lo
+                low_byte := data[i + 1]  
+                high_byte := data[i + 2] 
                 value := concat_bits(low_byte, high_byte)
                 src = fmt.aprintf("%d", parse_sign_u16(value)) 
             } else {
