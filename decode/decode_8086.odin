@@ -19,7 +19,6 @@ RM_OFFSET     :: 0
 
 AX :: 0b110 //NOTE: Accumulator is a special case as it has 16-bit displacement when used with mod=00
 
-
 REG_8 :: enum {
     AL = 0b000,
     CL = 0b001,
@@ -32,16 +31,15 @@ REG_8 :: enum {
 }
 
 REG_16 :: enum {
-    AX = 0b000,
-    CX = 0b001,
-    DX = 0b010,
-    BX = 0b011,
+    AX = 0b000, //decimal = 0
+    CX = 0b001, //decimal = 1
+    DX = 0b010, //decimal = 2
+    BX = 0b011, // 3
     SP = 0b100,
-    BP = 0b101,
+    BP = 0b101, //...
     SI = 0b110,
-    DI = 0b111,
+    DI = 0b111, //7
 }
-
 
 MOD :: enum {
     DISP_NO = 0b00,
@@ -51,21 +49,15 @@ MOD :: enum {
 }
 
 reg_to_string :: proc(reg_code: u8, w: bool) -> string {
-    base_reg_names: [16]string = {"al", "cl", "dl", "bl", "ah", "ch", "dh", "bh",
-                                  "ax", "cx", "dx", "bx", "sp", "bp", "si", "di"}
-    if w {
-        if reg_code >= 0b110 {  //SP, BP, SI, DI don
-            return base_reg_names[reg_code] 
-        } else {
-            return base_reg_names[reg_code + 8] // Offset to reach AX, CX, DX, BX
-        } 
+    reg_names: [16]string = {"al", "cl", "dl", "bl", "ah", "ch", "dh", "bh",
+                             "ax", "cx", "dx", "bx", "sp", "bp", "si", "di"}
+    if w { 
+        return reg_names[reg_code + 8]
     } else {
-        // For byte operations, use the name directly including `h` and `l`
-        return base_reg_names[reg_code]
+        return reg_names[reg_code]
     }
 }
 
-// Function to read binary instructions from a file
 read_instructions :: proc(path: string) -> []u8 {
     f, open_err := os.open(path, os.O_RDONLY, 0)
     defer os.close(f)
@@ -83,77 +75,40 @@ read_instructions :: proc(path: string) -> []u8 {
     return buffer[:bytes]
 }
 
-parse_instruction :: proc(data: []u8, index: int, data_length: int) -> (string, int) {
-    if index + 1 >= data_length {
-        return "End of data reached unexpectedly.", index  // Prevent reading beyond the array
-    }
+parse_instructions :: proc(data: []u8) -> string {
+    decoded_str := "Bits 16\n\n"
+    data_len := len(data)
 
-    opcode_byte := data[index]
-    modrm_byte := data[index + 1]
+    //TODO: need to iterate by instruction size
+    for i:=0; i < data_len-1; i+=2 {
+        opcode_byte := data[i]
+        modrm_byte := data[i + 1]
 
-    w := (opcode_byte & W_MASK) != 0
-    mod := (modrm_byte & MOD_MASK) >> MOD_OFFSET
-    reg := (modrm_byte & REG_MASK) >> REG_OFFSET
-    rm := (modrm_byte & RM_MASK)
+        w := (opcode_byte & W_MASK) != 0
+        d := (opcode_byte & D_MASK) != 0
+        mod := (modrm_byte & MOD_MASK) >> MOD_OFFSET
+        reg := (modrm_byte & REG_MASK) >> REG_OFFSET
+        rm := (modrm_byte & RM_MASK)
 
-    instruction_size := 2  // Base size for opcode and ModR/M byte
-    displacement_size := 0
-    immediate_value := ""
-    addressing := ""
+          
+        displacement_size := 0
+        mnemonic := "mov"
+        formatted_instruction: string
+        dest: string
+        src: string
 
-    switch mod {
-    case u8(MOD.DISP_NO):
-        if rm == AX {
-            if index + 3 >= data_length { return "Not enough data for displacement.", index }
-            displacement_size = 2  // Direct addressing with 16-bit displacement
-            addressing = fmt.aprintf("[%d]", read_word(data, index + 2))
-            instruction_size += displacement_size
-        } else {
-            addressing = fmt.aprintf("[%s]", reg_to_string(rm, true)) 
+        switch mod {
+        case u8(MOD.REG):
+            if (d) {
+                dest  = reg_to_string(reg, w)
+                src = reg_to_string(rm, w)
+            } else {
+                dest = reg_to_string(rm, w)
+                src  = reg_to_string(reg, w)
+            }
+            formatted_instruction = fmt.aprintf("%s %s, %s \n", mnemonic, dest, src )
         }
-    case u8(MOD.DISP_LO):
-        if index + 2 >= data_length { return "Not enough data for low displacement.", index }
-        displacement_size = 1  // 8-bit displacement
-        addressing = fmt.aprintf("[%s + %d]", reg_to_string(rm, true), data[index + 2])
-        instruction_size += displacement_size
-    case u8(MOD.DISP_HI):
-        if index + 3 >= data_length { return "Not enough data for high displacement.", index }
-        displacement_size = 2  // 16-bit displacement
-        addressing = fmt.aprintf("[%s + %d]", reg_to_string(rm, true), read_word(data, index + 2))
-        instruction_size += displacement_size
-    case u8(MOD.REG):
-        addressing = reg_to_string(rm, w) 
+        decoded_str = strings.concatenate({decoded_str, formatted_instruction})
     }
-
-    if w && mod != u8(MOD.REG) {
-        if index + instruction_size + 1 >= data_length {
-            return "Not enough data for immediate value.", index
-        }
-        immediate_value = fmt.aprintf(", %d", read_word(data, index + instruction_size))
-        instruction_size += 2
-    } else if !w && mod != u8(MOD.REG) {
-        if index + instruction_size >= data_length {
-            return "Not enough data for immediate byte value.", index
-        }
-        immediate_value = fmt.aprintf(", %d", data[index + instruction_size])
-        instruction_size += 1
-    }
-
-    formatted_instruction := fmt.aprintf("mov %s, %s%s", addressing, reg_to_string(reg, w), immediate_value)
-    return formatted_instruction, instruction_size
-}
-
-format_instructions :: proc(data: []u8) -> string {
-    result := "Bits 16\n\n"
-    i := 0
-    for i < len(data) {
-        instruction, size := parse_instruction(data, i, len(data))
-        result = strings.concatenate({result, fmt.aprintf("%s\n", instruction)})
-        i += size
-    }
-    return result
-}
-
-read_word :: proc(data: []u8, index: int) -> u16 {
-    return u16(data[index]) | (u16(data[index + 1]) << 8)
+    return decoded_str
 }
