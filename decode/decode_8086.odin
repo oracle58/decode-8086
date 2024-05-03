@@ -4,42 +4,44 @@ import "core:fmt"
 import "core:os"
 import "core:strings"
 
-OPCODE_MASK   :: 0b11111100 
-D_MASK        :: 0b00000010  
-W_MASK        :: 0b00000001  
-MOD_MASK      :: 0b11000000  
-REG_MASK      :: 0b00111000  
-RM_MASK       :: 0b00000111 
+//NOTE: remove constants as these patterns differ from case to case
+OPCODE_MASK   :: 0b11111100
+D_MASK        :: 0b00000010
+W_MASK        :: 0b00000001
+MOD_MASK      :: 0b11000000
+REG_MASK      :: 0b00111000
+RM_MASK       :: 0b00000111
 
-OPCODE_OFFSET :: 2
+OPCODE_OFFSET :: 2 
 D_OFFSET      :: 1
 MOD_OFFSET    :: 6
 REG_OFFSET    :: 3
+RM_OFFSET     :: 0
 
-OPCODE :: enum {
-    MOV = 0b100010
+AX :: 0b110 //NOTE: Accumulator is a special case as it has 16-bit displacement when used with mod=00
+
+OPCODES :: enum {
+    REG_RM = 0b100010,
+    IMMEDIATE_RM = 0b110011,
+    IMMEDIATE_REG = 0b1011,
 }
 
-REG_LH :: enum{
-    AL = 0b000,  
-    CL = 0b001,  
-    DL = 0b010,  
-    BL = 0b011,  
-    AH = 0b100,  
-    CH = 0b101,  
-    DH = 0b110,  
-    BH = 0b111  
+
+MOD :: enum {
+    DISP_NO = 0b00,
+    DISP_LO = 0b01,
+    DISP_HI = 0b10,
+    REG = 0b11
 }
 
-REG_X :: enum {
-    AX = 0b000,  
-    CX = 0b001,  
-    DX = 0b010,  
-    BX = 0b011,  
-    SP = 0b100,  
-    BP = 0b101,  
-    SI = 0b110,  
-    DI = 0b111   
+parse_reg :: proc(reg_code: u8, w: bool) -> string {
+    reg_names: [16]string = {"al", "cl", "dl", "bl", "ah", "ch", "dh", "bh",
+                             "ax", "cx", "dx", "bx", "sp", "bp", "si", "di"}
+    if w { 
+        return reg_names[reg_code + 8]
+    } else {
+        return reg_names[reg_code]
+    }
 }
 
 read_instructions :: proc(path: string) -> []u8 {
@@ -59,72 +61,85 @@ read_instructions :: proc(path: string) -> []u8 {
     return buffer[:bytes]
 }
 
-parse_instruction :: proc (data: []u8, index: int) -> (u8, u8, u8, u8, u8, u8){
-    opcode_byte := data[index]
-    modrm_byte := data[index+1]
+iterator_limit: int = 20
 
-    opcode := (opcode_byte & OPCODE_MASK) >> OPCODE_OFFSET
-    d := (opcode_byte & D_MASK) >> D_OFFSET
-    w := (opcode_byte & W_MASK) 
-    mod := (modrm_byte & MOD_MASK) >> MOD_OFFSET
-    reg := (modrm_byte & REG_MASK) >> REG_OFFSET
-    rm := (modrm_byte & RM_MASK)
+parse_instructions :: proc(data: []u8) -> string {
+    decoded_str := "Bits 16\n\n"
+    data_len := len(data)
+    fmt.printfln("%b", data)
 
-    return opcode, d, w, mod, reg, rm
-}
+    //TODO: need to iterate by instruction size
+    for i:=0; i < iterator_limit; {
+        opcode_byte := data[i]
+        
+        mnemonic := "mov"
+        formatted_instruction: string
+        dest: string
+        src: string
+        
+        w: bool
+        d: bool
+        reg: u8 
+        rm: u8 
+        size:int = 2
 
-opcode_to_string :: proc(opcode_byte: u8) -> string {
-    switch opcode_byte {
-        case u8(OPCODE.MOV):
-            return "mov"
-        case: 
-            panic("unrecognized opcode")
-    }
-}
+        if (opcode_byte >> 2 == u8(OPCODES.REG_RM)) {  
+            
+            data_byte := data[i + 1]  
 
-reg_to_string :: proc(reg_byte: u8, w: u8) -> string {
-    if w == 1 {
-        switch reg_byte {
-            case u8(REG_X.AX): return "ax"
-            case u8(REG_X.CX): return "cx"
-            case u8(REG_X.DX): return "dx"
-            case u8(REG_X.BX): return "bx"
-            case u8(REG_X.SP): return "sp"
-            case u8(REG_X.BP): return "bp"
-            case u8(REG_X.SI): return "si"
-            case u8(REG_X.DI): return "di"
-            case: 
-                panic("unrecognized registry encoding")
+            w = (opcode_byte & 0b00000001) != 0
+            d = (opcode_byte & 0b00000010) != 0
+
+            reg = (data_byte & REG_MASK) >> REG_OFFSET
+            rm = (data_byte & RM_MASK)
+            mod := (data_byte & MOD_MASK) >> MOD_OFFSET
+            if (d) {
+                dest  = parse_reg(reg, w)
+                src = parse_reg(rm, w)
+            } else {
+                dest = parse_reg(rm, w)
+                src  = parse_reg(reg, w)
+            }
         }
+        else if (opcode_byte >> 4 == u8(OPCODES.IMMEDIATE_REG)) { 
+
+            w = (opcode_byte & 0b00001000) != 0
+            reg = (opcode_byte & 0b00000111) 
+            dest = parse_reg(reg, w)
+            if w {
+                size = 3
+                low_byte := data[i + 1]   // data
+                high_byte := data[i + 2]  // disp_lo
+                value := concat_bits(low_byte, high_byte)
+                src = fmt.aprintf("%d", parse_sign_u16(value)) 
+            } else {
+                data_byte := data[i + 1]  
+                src = fmt.aprintf("%d", parse_sign_u8(data_byte)) 
+            } 
+        }
+        formatted_instruction = fmt.aprintf("%s %s, %s \n", mnemonic, dest, src)
+        decoded_str = strings.concatenate({decoded_str, formatted_instruction})
+        i+=size
+    }
+    return decoded_str
+}
+
+parse_sign_u8 :: proc(value: u8) -> int {
+    if value & 0x80 != 0 {  // Check if the MSB (bit 8) is set
+        return int(i8(value))  
     } else {
-        switch reg_byte {
-            case u8(REG_LH.AL): return "al"
-            case u8(REG_LH.CL): return "cl"
-            case u8(REG_LH.DL): return "dl"
-            case u8(REG_LH.BL): return "bl"
-            case u8(REG_LH.AH): return "ah"
-            case u8(REG_LH.CH): return "ch"
-            case u8(REG_LH.DH): return "dh"
-            case u8(REG_LH.BH): return "bh"
-            case: 
-                panic("unrecognized registry encoding")
-        }
+        return int(value)
     }
 }
 
-format_instructions :: proc(data: []u8) -> string {
-    result := strings.Builder{}
-    defer strings.builder_destroy(&result)
-
-    str := "bits 16\n\n"
-
-    for i := 0; i < len(data) - 1; i += 2 {
-        opcode, d, w, mod, reg, rm := parse_instruction(data, i)
-        opcode_str := opcode_to_string(opcode)
-        source := reg_to_string(reg, w)
-        dest := reg_to_string(rm, w)
-        line := fmt.aprintf("%s %s, %s\n", opcode_str, dest, source)
-        str = strings.concatenate({str, line})
+parse_sign_u16 :: proc(value: u16) -> int {
+    if value & 0x8000 != 0 {  // Check if the MSB (bit 16) is set
+        return int(i16(value))  
+    } else {
+        return int(value)
     }
-    return str
+}
+
+concat_bits :: proc(low_byte: u8, high_byte: u8, ) -> u16 {
+    return u16(low_byte) | u16(high_byte) << 8
 }
