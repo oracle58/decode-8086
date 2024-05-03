@@ -83,7 +83,6 @@ parse_instructions :: proc(data: []u8) -> string {
         rm: u8 
         size:int = 2
 
-        
         if (opcode_byte >> 2 == u8(OPCODES.REG_RM)) {  
             
             data_byte := data[i + 1]  
@@ -126,7 +125,7 @@ parse_instructions :: proc(data: []u8) -> string {
 }
 
 parse_sign_u8 :: proc(value: u8) -> int {
-    if value & 0x80 != 0 {  // Check if the MSB (bit 7) is set
+    if value & 0x80 != 0 {  // Check if the MSB (bit 8) is set
         return int(i8(value))  
     } else {
         return int(value)
@@ -134,7 +133,7 @@ parse_sign_u8 :: proc(value: u8) -> int {
 }
 
 parse_sign_u16 :: proc(value: u16) -> int {
-    if value & 0x8000 != 0 {  // Check if the MSB (bit 7) is set
+    if value & 0x8000 != 0 {  // Check if the MSB (bit 16) is set
         return int(i16(value))  
     } else {
         return int(value)
