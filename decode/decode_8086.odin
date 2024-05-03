@@ -4,6 +4,7 @@ import "core:fmt"
 import "core:os"
 import "core:strings"
 
+//NOTE: remove constants as these patterns differ from case to case
 OPCODE_MASK   :: 0b11111100
 D_MASK        :: 0b00000010
 W_MASK        :: 0b00000001
@@ -11,7 +12,7 @@ MOD_MASK      :: 0b11000000
 REG_MASK      :: 0b00111000
 RM_MASK       :: 0b00000111
 
-OPCODE_OFFSET :: 2
+OPCODE_OFFSET :: 2 
 D_OFFSET      :: 1
 MOD_OFFSET    :: 6
 REG_OFFSET    :: 3
@@ -19,27 +20,12 @@ RM_OFFSET     :: 0
 
 AX :: 0b110 //NOTE: Accumulator is a special case as it has 16-bit displacement when used with mod=00
 
-REG_8 :: enum {
-    AL = 0b000,
-    CL = 0b001,
-    DL = 0b010,
-    BL = 0b011,
-    AH = 0b100,
-    CH = 0b101,
-    DH = 0b110,
-    BH = 0b111
+OPCODES :: enum {
+    REG_RM = 0b100010,
+    IMMEDIATE_RM = 0b110011,
+    IMMEDIATE_REG = 0b1011,
 }
 
-REG_16 :: enum {
-    AX = 0b000, //decimal = 0
-    CX = 0b001, //decimal = 1
-    DX = 0b010, //decimal = 2
-    BX = 0b011, // 3
-    SP = 0b100,
-    BP = 0b101, //...
-    SI = 0b110,
-    DI = 0b111, //7
-}
 
 MOD :: enum {
     DISP_NO = 0b00,
@@ -78,27 +64,30 @@ read_instructions :: proc(path: string) -> []u8 {
 parse_instructions :: proc(data: []u8) -> string {
     decoded_str := "Bits 16\n\n"
     data_len := len(data)
+    fmt.printfln("%b", data)
 
     //TODO: need to iterate by instruction size
-    for i:=0; i < data_len-1; i+=2 {
+    for i:=0; i < 8; i+=2 {
         opcode_byte := data[i]
         modrm_byte := data[i + 1]
-
-        w := (opcode_byte & W_MASK) != 0
-        d := (opcode_byte & D_MASK) != 0
-        mod := (modrm_byte & MOD_MASK) >> MOD_OFFSET
-        reg := (modrm_byte & REG_MASK) >> REG_OFFSET
-        rm := (modrm_byte & RM_MASK)
-
           
         displacement_size := 0
         mnemonic := "mov"
         formatted_instruction: string
         dest: string
         src: string
+        mod := (modrm_byte & MOD_MASK) >> MOD_OFFSET
+        w: bool
+        d: bool
+        reg: u8 
+        rm: u8 
+        data: u8
 
-        switch mod {
-        case u8(MOD.REG):
+        if (opcode_byte >> 2 == u8(OPCODES.REG_RM)) {  
+            w = (opcode_byte & 0b00000001) != 0
+            d = (opcode_byte & 0b00000010) != 0
+            reg = (modrm_byte & REG_MASK) >> REG_OFFSET
+            rm = (modrm_byte & RM_MASK)
             if (d) {
                 dest  = reg_to_string(reg, w)
                 src = reg_to_string(rm, w)
@@ -106,8 +95,22 @@ parse_instructions :: proc(data: []u8) -> string {
                 dest = reg_to_string(rm, w)
                 src  = reg_to_string(reg, w)
             }
-            formatted_instruction = fmt.aprintf("%s %s, %s \n", mnemonic, dest, src )
         }
+        else if (opcode_byte >> 4 == u8(OPCODES.IMMEDIATE_REG)) { 
+
+            w = (opcode_byte & 0b00001000) != 0
+            reg = (opcode_byte & 0b00000111) 
+            fmt.printfln("BYTESLICE: %b", opcode_byte)
+            fmt.printfln("REG: %b", reg)
+            src = fmt.aprintf("%d", modrm_byte)
+            dest = reg_to_string(reg, w)
+        }
+
+        // switch mod {
+        //     case u8(MOD.REG):
+                
+        //     }
+        formatted_instruction = fmt.aprintf("%s %s, %s \n", mnemonic, dest, src)
         decoded_str = strings.concatenate({decoded_str, formatted_instruction})
     }
     return decoded_str

@@ -8,7 +8,7 @@ main :: proc() {
     exercise1_bonus := "./samples/listing_0038_many_register_mov"
     exercise2 := "./samples/listing_0039_more_movs"
 
-    data := decode.read_instructions(exercise1_bonus)
+    data := decode.read_instructions(exercise2)
     instructions := decode.parse_instructions(data)
     fmt.printfln(instructions)
 }
